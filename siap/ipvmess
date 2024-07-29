@@ -1,0 +1,55 @@
+#!/bin/bash
+function send_log(){
+    CHATID=$(grep -E "^#bot# " "/etc/bot/.bot.db" | cut -d ' ' -f 3)
+    KEY=$(grep -E "^#bot# " "/etc/bot/.bot.db" | cut -d ' ' -f 2)
+    TIME="10"
+    URL="https://api.telegram.org/bot$KEY/sendMessage"
+    TEXT="
+<b>◇━━━━━━━━━━━━━━━━━◇</b>
+<b>❖ MULTI LOGIN USER ❖</b>
+<b>◇━━━━━━━━━━━━━━━━━◇</b>
+<b>❖ Username :</b>  $user
+<b>❖ Protokol :</b>  VMESS
+<b>❖ IP Limit :</b>  ${iplimit} IP
+<b>❖ IP Login :</b>  ${cekcek} IP
+<b>◇━━━━━━━━━━━━━━━━━◇</b>
+<b>❖ DETAIL LOGIN USER ❖</b>
+<b>◇━━━━━━━━━━━━━━━━━◇</b>
+<b>${rinci}</b>
+<b>◇━━━━━━━━━━━━━━━━━◇</b>
+<b>Account Is 🔴LOCKED</b>
+"
+    curl -s --max-time $TIME -d "chat_id=$CHATID&disable_web_page_preview=1&text=$TEXT&parse_mode=html" $URL >/dev/null
+}
+
+echo -n > /var/log/xray/access.log
+sleep 5
+data=( `ls /etc/limit/vmess/ip`);
+for user in "${data[@]}"
+do
+    echo -n >/tmp/vmip.txt
+    echo -n >/tmp/vmipp.txt
+    ehh=$(cat /var/log/xray/access.log | grep "$user" | cut -d " " -f 3 | sed 's/tcp://g' | cut -d ":" -f 1 | sort | uniq);
+    echo "$ehh" >>/tmp/vmip.txt
+    broo=($(cat /tmp/vmip.txt))
+    for dip in "${broo[@]}"; do
+        wak=$(cat /var/log/xray/access.log | grep -w "$dip" | tail -n 500 | cut -d " " -f 2 | tail -1)
+        echo "❖ $wak » $dip" >>/tmp/vmipp.txt
+    done
+    rinci=$(cat /tmp/vmipp.txt)
+    iplimit=$(cat /etc/limit/vmess/ip/$user)
+    cekcek=$(echo -e "$ehh" | wc -l);
+    if [[ $cekcek -gt $iplimit ]]; then
+        exp=$(cat /etc/vmess/.vmess.db | grep $user | awk '{print $3}')
+        uuid=$(cat /etc/vmess/.vmess.db | grep $user | awk '{print $4}')
+        sed -i "/^### $user $exp/,/^},{/d" /etc/xray/config.json
+        echo "### ${user} ${exp} ${uuid}" >>/etc/vmess/.mulog.db
+        systemctl restart xray
+        send_log
+    else
+        echo ""
+    fi
+    rm -rf /tmp/vmip.txt
+    rm -rf /tmp/vmipp.txt
+done
+sleep 60

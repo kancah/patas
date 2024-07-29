@@ -1,0 +1,44 @@
+#!/bin/bash
+rm setupmulog
+GITHUB_CMD="https://raw.githubusercontent.com/kancah/patas/main/siap/"
+clear
+cd
+systemctl daemon-reload
+systemctl stop limitipvm
+systemctl stop limitipvl
+systemctl stop limitiptr
+systemctl stop limitipss
+touch /etc/shadowsocks/.mulog.db
+touch /etc/trojan/.mulog.db
+touch /etc/vless/.mulog.db
+touch /etc/vmess/.mulog.db
+touch /etc/ssh/.mulog.db
+rm /usr/bin/unxray
+rm /usr/bin/kills
+rm /etc/xray/limitip.vmess
+rm /etc/xray/limitip.vless
+rm /etc/xray/limitip.trojan
+rm /etc/xray/limitip.shadowsocks
+wget -q -O /etc/xray/limitip.vmess "${GITHUB_CMD}ipvmess" >/dev/null 2>&1
+wget -q -O /etc/xray/limitip.vless "${GITHUB_CMD}ipvless" >/dev/null 2>&1
+wget -q -O /etc/xray/limitip.trojan "${GITHUB_CMD}iptrojan" >/dev/null 2>&1
+wget -q -O /etc/xray/limitip.shadowsocks "${GITHUB_CMD}ipshadowsocks" >/dev/null 2>&1
+wget -q -O /usr/bin/kills "${GITHUB_CMD}kills" >/dev/null 2>&1
+wget -q -O /usr/bin/unxray "${GITHUB_CMD}unxray" >/dev/null 2>&1
+chmod +x /etc/xray/limitip.vmess
+chmod +x /etc/xray/limitip.vless
+chmod +x /etc/xray/limitip.trojan
+chmod +x /etc/xray/limitip.shadowsocks
+chmod +x /usr/bin/kills
+chmod +x /usr/bin/unxray
+cat >/etc/cron.d/unlockxray <<-END
+	SHELL=/bin/sh
+	PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+	*/30 * * * * root /usr/bin/unxray
+END
+systemctl daemon-reload
+systemctl restart limitipvm
+systemctl restart limitipvl
+systemctl restart limitiptr
+systemctl restart limitipss
+systemctl restart cron

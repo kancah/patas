@@ -1,0 +1,99 @@
+#!/bin/bash
+function send_log(){
+    CHATID=$(grep -E "^#bot# " "/etc/bot/.bot.db" | cut -d ' ' -f 3)
+    KEY=$(grep -E "^#bot# " "/etc/bot/.bot.db" | cut -d ' ' -f 2)
+    TIME="10"
+    URL="https://api.telegram.org/bot$KEY/sendMessage"
+    TEXT="
+<b>◇━━━━━━━━━━━━━━━━━◇</b>
+<b>❖ INFORMASI ACCOUNT ❖</b>
+<b>◇━━━━━━━━━━━━━━━━━◇</b>
+<b>❖ Username :</b>  $user
+<b>❖ Expired  :</b>  $exp
+<b>❖ Protokol :</b>  $proo
+<b>❖ IP Limit :</b>  ${iplimit} IP
+<b>◇━━━━━━━━━━━━━━━━━◇</b>
+<b>Account Is 🟢UNLOCKED</b>
+"
+    curl -s --max-time $TIME -d "chat_id=$CHATID&disable_web_page_preview=1&text=$TEXT&parse_mode=html" $URL >/dev/null
+}
+
+data=($(cat /etc/ssh/.mulog.db | grep '^###' | cut -d ' ' -f 2 | sort | uniq))
+for user in "${data[@]}"; do
+    proo="SSH/WS-OVPN"
+    exp=$(grep -wE "^### $user" "/etc/ssh/.ssh.db" | cut -d ' ' -f 3 | sort | uniq)
+    epass=$(grep -wE "^### $user" "/etc/ssh/.ssh.db" | cut -d ' ' -f 4 | sort | uniq)
+    iplimit=$(grep -wE "^### $user" "/etc/ssh/.ssh.db" | cut -d ' ' -f 5 | sort | uniq)
+    chtml=$(grep -wE "^### $user" "/etc/ssh/.ssh.db" | cut -d ' ' -f 7 | sort | uniq)
+    sed -i "/### $user/c\### $user $exp $epass $iplimit Unlock $chtml" /etc/ssh/.ssh.db
+    egrep "^$user" /etc/passwd >/dev/null
+    passwd -u $user
+    sed -i "/^### $user/d" /etc/ssh/.mulog.db
+done
+
+data=($(cat /etc/trojan/.mulog.db | grep '^###' | cut -d ' ' -f 2 | sort | uniq))
+for user in "${data[@]}"; do
+    proo="TROJAN"
+    exp=$(cat /etc/trojan/.mulog.db | grep $user | awk '{print $3}')
+    uuid=$(cat /etc/trojan/.mulog.db | grep $user | awk '{print $4}')
+    iplimit=$(cat /etc/limit/trojan/ip/$user)
+    sed -i '/#trojanws$/a\#! '"$user $exp"'\
+},{"password": "'""$uuid""'","email": "'""$user""'"' /etc/xray/config.json
+    sed -i '/#trojangrpc$/a\#! '"$user $exp"'\
+},{"password": "'""$uuid""'","email": "'""$user""'"' /etc/xray/config.json
+    sed -i '/#trojanhu$/a\#! '"$user $exp"'\
+},{"password": "'""$uuid""'","email": "'""$user""'"' /etc/xray/config.json
+    sed -i "/^### $user $exp/d" /etc/trojan/.mulog.db
+    systemctl restart xray
+    send_log
+done
+
+data=($(cat /etc/vmess/.mulog.db | grep '^###' | cut -d ' ' -f 2 | sort | uniq))
+for user in "${data[@]}"; do
+    proo="VMESS"
+    exp=$(cat /etc/vmess/.mulog.db | grep $user | awk '{print $3}')
+    uuid=$(cat /etc/vmess/.mulog.db | grep $user | awk '{print $4}')
+    iplimit=$(cat /etc/limit/vmess/ip/$user)
+    sed -i '/#vmess$/a\### '"$user $exp"'\
+},{"id": "'""$uuid""'","alterId": '"0"',"email": "'""$user""'"' /etc/xray/config.json
+    sed -i '/#vmessgrpc$/a\### '"$user $exp"'\
+},{"id": "'""$uuid""'","alterId": '"0"',"email": "'""$user""'"' /etc/xray/config.json
+    sed -i '/#vmesshu$/a\### '"$user $exp"'\
+},{"id": "'""$uuid""'","alterId": '"0"',"email": "'""$user""'"' /etc/xray/config.json
+    sed -i "/^### $user $exp/d" /etc/vmess/.mulog.db
+    systemctl restart xray
+    send_log
+done
+
+data=($(cat /etc/vless/.mulog.db | grep '^###' | cut -d ' ' -f 2 | sort | uniq))
+for user in "${data[@]}"; do
+    proo="VLESS"
+    exp=$(cat /etc/vless/.mulog.db | grep $user | awk '{print $3}')
+    uuid=$(cat /etc/vless/.mulog.db | grep $user | awk '{print $4}')
+    iplimit=$(cat /etc/limit/vless/ip/$user)
+    sed -i '/#vless$/a\#& '"$user $exp"'\
+},{"id": "'""$uuid""'","email": "'""$user""'"' /etc/xray/config.json
+    sed -i '/#vlessgrpc$/a\#& '"$user $exp"'\
+},{"id": "'""$uuid""'","email": "'""$user""'"' /etc/xray/config.json
+    sed -i '/#vlesshu$/a\#& '"$user $exp"'\
+},{"id": "'""$uuid""'","email": "'""$user""'"' /etc/xray/config.json
+    sed -i "/^### $user $exp/d" /etc/vless/.mulog.db
+    systemctl restart xray
+    send_log
+done
+
+data=($(cat /etc/shadowsocks/.mulog.db | grep '^###' | cut -d ' ' -f 2 | sort | uniq))
+for user in "${data[@]}"; do
+    proo="SHADOWSOCKS"
+    cipher="aes-128-gcm"
+    exp=$(cat /etc/shadowsocks/.mulog.db | grep $user | awk '{print $3}')
+    uuid=$(cat /etc/shadowsocks/.mulog.db | grep $user | awk '{print $4}')
+    iplimit=$(cat /etc/limit/shadowsocks/ip/$user)
+    sed -i '/#ssws$/a\###& '"$user $exp"'\
+},{"password": "'""$uuid""'","method": "'""$cipher""'","email": "'""$user""'"' /etc/xray/config.json
+    sed -i '/#ssgrpc$/a\###& '"$user $exp"'\
+},{"password": "'""$uuid""'","method": "'""$cipher""'","email": "'""$user""'"' /etc/xray/config.json
+    sed -i "/^### $user $exp/d" /etc/shadowsocks/.mulog.db
+    systemctl restart xray
+    send_log
+done
